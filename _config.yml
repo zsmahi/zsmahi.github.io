@@ -35,18 +35,11 @@ github:
 #   username: twitter_username # change to your twitter username
 
 social:
-  # Change to your full name.
-  # It will be displayed as the default author of the posts and the copyright owner in the Footer
   name: Zakaria SMAHI
-  email: zakaria.smahi@gmail.com # change to your email address
+  email: zakaria.smahi@gmail.com
   links:
-    # The first element serves as the copyright owner's link
-    #- https://twitter.com/username # change to your twitter homepage
     - https://www.linkedin.com/in/zsmahi
-    - https://github.com/zsmahi # change to your github homepage
-    # Uncomment below to add more social links
-    # - https://www.facebook.com/username
-    #
+    - https://github.com/zsmahi
 
 google_site_verification: # fill in to your verification string
 
