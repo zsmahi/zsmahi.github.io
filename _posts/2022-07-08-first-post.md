@@ -3,7 +3,7 @@ title: First Post
 author: Zakaria SMAHI
 date: 2022-07-08 16:11:00 +0200
 categories: [Blogging]
-tags: [.net, blogging]
+tags: [.net, blogging, devops, sqlserver]
 pin: true
 math: true
 mermaid: true
