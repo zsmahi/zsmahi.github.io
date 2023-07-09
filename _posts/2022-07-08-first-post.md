@@ -1,6 +1,6 @@
 ---
 title: First Post
-author: zsmahi
+author: Zakaria SMAHI
 date: 2022-07-08 16:11:00 +0200
 categories: [Blogging]
 tags: [.net, blogging]
