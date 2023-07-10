@@ -47,7 +47,7 @@ google_site_verification: # fill in to your verification string
 # The end of `jekyll-seo-tag` settings
 
 google_analytics:
-  id: # fill in your Google Analytics ID
+  id: G-C2650G0DYB # fill in your Google Analytics ID
 
 # Prefer color scheme setting.
 #
@@ -187,3 +187,6 @@ jekyll-archives:
   permalinks:
     tag: /tags/:name/
     category: /categories/:name/
+
+plugins:
+  - jemoji

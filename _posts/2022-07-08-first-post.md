@@ -1,6 +1,6 @@
 ---
 title: First Post
-author: Zakaria SMAHI
+author: zsmahi
 date: 2022-07-08 16:11:00 +0200
 categories: [Blogging]
 tags: [.net, blogging, devops, sqlserver]
@@ -16,4 +16,4 @@ My name is Zakaria SMAHI, I'm a senior software engineer with almost 10 years ex
 In this blog, I'm going to share some technical stuffs that I'm facing in my workdays (architecture, technical books, ...etc.)
 
 
-I hope you enjoy :)
+I hope you enjoy :smiley:
