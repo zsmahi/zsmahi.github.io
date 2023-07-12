@@ -1,14 +1,14 @@
 ---
 title: Yet another post about clean code book
 author: zsmahi
-date: 2022-07-10 23:00:00 +0200
+date: 2023-07-10 23:00:00 +0200
 categories: [Blogging, Books]
 tags: [coding,books]
 pin: true
 math: true
 mermaid: true
 image:
-  path: /assets/img/posts/20220710/cleancode.jpg
+  path: /assets/img/posts/20230710/cleancode.jpg
 ---
 
 ## Clean code A Handbook of Agile Software Craftsmanship
@@ -28,7 +28,7 @@ I had the chance to read three times, and it helped me alot to make my code clea
 ## Clean code mindmap
 
 
-![Desktop View](/assets/img/posts/20220710/CleanCodeWhite.svg){: width="2007" height="574" .w-75 .normal}
+![Desktop View](/assets/img/posts/20230710/CleanCodeWhite.svg){: width="2007" height="574" .w-75 .normal}
 
 that's all folks! Keep your code cleaner :grinning:
 

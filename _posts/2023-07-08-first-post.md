@@ -1,7 +1,7 @@
 ---
 title: First Post
 author: zsmahi
-date: 2022-07-08 16:11:00 +0200
+date: 2023-07-08 16:11:00 +0200
 categories: [Blogging]
 tags: [.net, blogging, devops, sqlserver]
 pin: true
