@@ -8,7 +8,7 @@ pin: true
 math: true
 mermaid: true
 image:
-  path: /assets/img/posts/20220710/CleanCodeWhite.svg
+  path: /assets/img/posts/20220710/cleancode.jpg
 ---
 
 ## Clean code A Handbook of Agile Software Craftsmanship
