@@ -23,7 +23,7 @@ I had the chance to read three times, and it helped me alot to make my code clea
 
 - It's always good to remind developers of how code should be clean to avoid the WTF/minutes
 - It's my turn to share a content about this book :grin:
-- In this post I'll resume the book with a mindmap, so developers can easily find necessary points about clean code
+- In this post I'll resume the book with a **mindmap**, so developers can easily find necessary points about clean code
 
 ## Clean code mindmap
 
