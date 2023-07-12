@@ -112,7 +112,11 @@ We will use the overload method of Contains, that need an [**IEqualityComparer**
 
 so the method will be like that:
 ```cs
-public static bool In<T>(this T item, IEqualityComparer<T> comparer, params T[] collection)
+public static bool In<T>(
+  this T item,
+  IEqualityComparer<T> comparer,
+  params T[] collection
+  )
 {
   if (!collection.Any())
   {
