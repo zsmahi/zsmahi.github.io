@@ -28,7 +28,7 @@ I had the chance to read three times, and it helped me alot to make my code clea
 ## Clean code mindmap
 
 
-![Desktop View](/assets/img/posts/20220710/CleanCodeWhite.svg){: width="972" height="589" .w-75 .normal}
+![Desktop View](/assets/img/posts/20220710/CleanCodeWhite.svg){: width="2007" height="574" .w-75 .normal}
 
 that's all folks! Keep your code cleaner :grinning:
 
