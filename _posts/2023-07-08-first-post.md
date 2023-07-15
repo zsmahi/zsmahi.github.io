@@ -1,5 +1,5 @@
 ---
-title: First Post
+title: EP00- First Post
 author: zsmahi
 date: 2023-07-08 16:11:00 +0200
 categories: [Blogging]

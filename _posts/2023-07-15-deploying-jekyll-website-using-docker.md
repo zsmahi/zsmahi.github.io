@@ -1,5 +1,5 @@
 ---
-title: Deploying a Jekyll Website Using Docker
+title: EP03- Deploying a Jekyll Website Using Docker
 author: zsmahi
 date: 2023-07-15 23:50:00 +0200
 categories: [Blogging, Coding]

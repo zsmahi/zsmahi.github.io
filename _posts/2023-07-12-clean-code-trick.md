@@ -1,5 +1,5 @@
 ---
-title: A cool C# clean code trick
+title: EP02- A cool C# clean code trick
 author: zsmahi
 date: 2023-07-12 21:00:00 +0200
 categories: [Blogging, Coding]
