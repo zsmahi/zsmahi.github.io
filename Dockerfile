@@ -1,8 +1,6 @@
 FROM ruby:3.2.2-bookworm
 
-RUN apt-get update -qq && apt-get install -y nodejs
-
-RUN gem install bundler jekyll
+RUN apt-get update -qq && apt-get install -y nodejs && gem install bundler jekyll && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
