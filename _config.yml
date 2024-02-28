@@ -191,3 +191,4 @@ jekyll-archives:
 plugins:
   - jemoji
   - jekyll-gist
+  - jekyll-feed
