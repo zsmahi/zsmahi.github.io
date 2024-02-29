@@ -117,26 +117,25 @@ This configuration ensures _createdDate is mapped to a CreatedDate column in the
 EF Core excels in mapping the complex web of relationships between entities. Whether it's one-to-one, one-to-many, or many-to-many, EF Core uses navigation properties to infer relationships, defaulting to conventions that can be overridden for granular control. The introduction of first-class support for many-to-many relationships in recent versions simplifies what was once a cumbersome process, eliminating the need for a join entity in many cases.
 
 ```cs
-public class Blog
+public class User
 {
-    public int BlogId { get; set; }
-    public List<Post> Posts { get; set; }
+    public int UserId { get; set; }
+    public List<Role> Roles { get; set; }
 }
 
-public class Post
+public class Role
 {
-    public int PostId { get; set; }
-    public string Title { get; set; }
-    public List<Blog> Blogs { get; set; }
+    public int RoleId { get; set; }
+    public List<User> Users { get; set; }
 }
 
-modelBuilder.Entity<Blog>()
-    .HasMany(b => b.Posts)
-    .WithMany(p => p.Blogs);
+modelBuilder.Entity<User>()
+    .HasMany(u => u.Roles)
+    .WithMany(r => r.Users);
 
 ```
 
-This setup automatically creates a join table to facilitate the many-to-many relationship between "Blog" and "Post".
+This setup automatically creates a join table to facilitate the many-to-many relationship between "User" and "Role".
 
 ## Advanced Configurations: The Devil in the Details
 
