@@ -637,4 +637,10 @@ public class UserId : StronglyTypedId<int>
 }
 ```
 
-That's all folks !
+## Gist {#gist}
+
+I've shared the code of the two generic classes as a gist
+
+{% gist dcced370c876dab5acd969208063391a %}
+
+that's all folks! Keep your code cleaner :grinning:
