@@ -496,7 +496,6 @@ If you are interested with value objects, I share with you this implementation o
 ```cs
 public abstract class ValueObject : IEquatable<ValueObject>
 {
-    private const PrimitiveNumber = 23;
     public static bool operator !=(ValueObject a, ValueObject b)
         => !(a == b);
 
@@ -528,16 +527,7 @@ public abstract class ValueObject : IEquatable<ValueObject>
         => Equals(other as object);
 
     public override int GetHashCode()
-    {
-        return GetEqualityComponents()
-            .Aggregate(1, (current, obj) =>
-            {
-                unchecked
-                {
-                    return (current * PrimitiveNumber) + (obj?.GetHashCode() ?? 0);
-                }
-            });
-    }
+        => HashCode.Combine(GetEqualityComponents());
 
     protected virtual IEnumerable<object> GetEqualityComponents()
     {
