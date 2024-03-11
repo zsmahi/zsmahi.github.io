@@ -608,7 +608,7 @@ public abstract class StronglyTypedId<TValue> where TValue : notnull
 }
 ```
 
-ou can now use it like this :
+You can now use it like this :
 
 ```cs
 public class UserId : StronglyTypedId<int>
