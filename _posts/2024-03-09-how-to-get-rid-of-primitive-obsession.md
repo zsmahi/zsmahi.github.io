@@ -3,7 +3,7 @@ title: EP06- How to get rid of primitive obsession
 author: zsmahi
 date: 2024-03-09 22:00:00 +0200
 categories: [Blogging, Coding]
-tags: [coding,c#, clean code]
+tags: [coding,c#, clean code, Domain Driven Design]
 pin: true
 math: true
 mermaid: true
