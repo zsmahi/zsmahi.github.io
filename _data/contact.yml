@@ -14,6 +14,14 @@
 - type: linkedin
   icon: 'fab fa-linkedin'   # icons powered by <https://fontawesome.com/>
   url:  'https://www.linkedin.com/in/zsmahi'                  # Fill with your Linkedin homepage
+
+- type: twitter
+  icon: 'fab fa-twitter'   # icons powered by <https://fontawesome.com/>
+  url:  'https://twitter.com/z_smahi'
+
+- type: newsletter
+  icon: 'fab fa-newspaper'
+  url: 'https://zsmahi.ck.page'                 # Fill with your Twitter homepage
 # Uncomment and complete the url below to enable more contact options
 #
 # - type: mastodon
