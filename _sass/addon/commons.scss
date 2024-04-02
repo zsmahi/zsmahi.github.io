@@ -1104,7 +1104,7 @@ $btn-mb: 0.5rem;
 #main-wrapper {
   background-color: var(--main-bg);
   position: relative;
-  min-height: calc(100vh - $footer-height-mobile);
+  // min-height: calc(100vh - $footer-height-mobile);
 
   @include pl-pr(0);
 }
@@ -1209,7 +1209,7 @@ $btn-mb: 0.5rem;
 
 @media all and (max-width: 576px) {
   #main-wrapper {
-    min-height: calc(100vh - #{$footer-height-mobile});
+    // min-height: calc(100vh - #{$footer-height-mobile});
   }
 
   #core-wrapper {
@@ -1368,7 +1368,7 @@ $btn-mb: 0.5rem;
   }
 
   #main-wrapper {
-    min-height: calc(100vh - $footer-height);
+    // min-height: calc(100vh - $footer-height);
   }
 
   footer {
