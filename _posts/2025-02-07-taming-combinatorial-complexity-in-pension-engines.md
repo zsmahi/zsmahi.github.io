@@ -18,7 +18,7 @@ In the domain of national pension projections, complexity is not an implementati
 The architectural challenge can be formalized as a combinatorial explosion:
 
 $$
-\text{System Entropy} \approx (\text{42 Independent Regimes}) \times (\text{Temporal Evolution of Laws}) \times (\text{Career Events})
+\text{System Entropy} \approx (\text{Career Hypothesis}) \times (\text{42 Independent Regimes}) \times (\text{Temporal Evolution})
 $$
 
 A standard layered architecture fails here because the **rate of legislative change** exceeds the **maintainability threshold** of a monolithic model.
@@ -31,14 +31,12 @@ This article details the architectural strategy used to decouple the **Invariant
 
 We utilized Domain-Driven Design (DDD) primarily for **Strategic Design**—to identify Bounded Contexts—rather than for tactical "Rich Entity" modeling.
 
-We identified a fundamental dichotomy in the domain:
+We identified that the engine is **Two-Dimensional**:
 
-1. **The Temporal Backbone (Invariant):** A career projection is, mathematically, always a loop from $T_{now}$ to $T_{retirement}$. This structure is stable.
-2. **The Regulatory Policy (Variant):** The *computation of rights* within that loop is volatile and regime-specific (e.g., CNAV Quarters vs. Agirc Points).
+1. **The Temporal Model (The Strategy):** Defined by the Career Hypothesis (e.g., *Salaried*, *Unemployment*, *Expatriation*). This dictates the "shape" of the timeline.
+2. **The Legal Policy (The Projector):** Defined by the Regime (e.g., *CNAV*, *AGIRC*). This dictates the "math" applied within that timeline.
 
-> **Architectural Decision:** We reframed the system from a "Simulation Service" to a **Federation of Projectors**.
-
-> * **Projector:** A domain concept representing a discrete calculation engine (Policy) for a specific legal regime.
+> **Architectural Decision:** We reframed the system from a "Simulation Service" to a **Federation of Projectors** orchestrated by **Hypothesis Strategies**.
 
 ---
 
@@ -158,9 +156,11 @@ sequenceDiagram
     end
 ```
 
-#### Language Friction: The "Bridge Tax"
+#### Language Friction: The "Bridge Tax" & Governance
 
-Implementing this in C# required accepting **Accidental Complexity**. Since our Projectors are generic (`<TData>`), we faced covariance issues when injecting them into a unified collection. We introduced a **Bridge Pattern** to adapt specific inputs to the generic engine. This is a "tax" we accepted to maintain **compile-time type safety** on our business rules, preventing runtime errors in a financial domain.
+Implementing this in C# required accepting **Accidental Complexity**. Since our Projectors are generic (`<TData>`), we faced covariance issues when injecting them into a unified collection. We introduced a **Bridge Pattern** to adapt specific inputs to the generic engine. 
+
+While this adds verbosity, it provides **Governance via Compilation**: it becomes physically impossible for a developer to pass "Unemployment Data" to a "Salaried Projector." The compiler enforces the boundary between Hypotheses.
 
 ---
 
