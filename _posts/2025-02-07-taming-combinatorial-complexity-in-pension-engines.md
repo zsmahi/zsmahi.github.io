@@ -42,6 +42,20 @@ The legacy system suffered from an "Anemic Domain Model"—logic was a thin laye
 
 We adopted a strict **Hexagonal Architecture** (Ports & Adapters) to isolate the Domain. We don't see layers; we see a **Driving Side** (Tests, API) and a **Driven Side** (Infrastructure, Databases).
 
+#### The Interface (The Port)
+Every regime logic must satisfy this contract. Note that `RegimeId` is not a primitive string but a **Smart Enum / Value Object** to avoid primitive obsession and encapsulate regime metadata.
+
+```csharp
+// The Port (Domain Boundary)
+public interface IRegimeProjector
+{
+    RegimeId Id { get; } // Smart Enum / Value Object
+    IReadOnlyCollection<Activity> Project(InputSalarie input, Context context);
+}
+```
+
+#### Visualizing the Hexagon
+
 ```mermaid
 graph LR
     classDef lavender fill:#e6e6ff,stroke:#666,stroke-width:1px,color:black
@@ -56,7 +70,7 @@ graph LR
     subgraph Core ["Hexagon<br>(Domain & Application)"]
         style Core fill:#ff99ff,stroke:#333,stroke-width:1px,color:black,padding:20px
         Orch["Orchestrator"]
-        Ports["<< Ports >><br>IRegimeProjector"]
+        Ports["<< Port >><br>IRegimeProjector"]
         Domain["Domain Model<br>(Career, Activity)"]
     end
 
@@ -70,8 +84,8 @@ graph LR
     API --> Orch
     Test --> Orch
     Orch --> Ports
-    Cnav -->|Implements| Ports
-    Msa -->|Implements| Ports
+    Cnav -.->|Implements| Ports
+    Msa -.->|Implements| Ports
     Cnav --> SQL
     Msa --> SQL
 
@@ -79,14 +93,15 @@ graph LR
 ```
 
 #### The Core Pattern: Template Method for Temporal Loops
-
 To avoid duplicating the "Time Loop" across 42 regimes, we factorized the invariant mechanics into a **Domain Service**.
 
 ```csharp
 // The Domain Service Base: Manages the Invariant (Time)
-public abstract class BaseRegimeSalaireProjector<TData> : RegimeProjectorBase<InputSalarie, TData>
+public abstract class BaseRegimeSalaireProjector<TData> : IRegimeProjector
 {
-    public override IReadOnlyCollection<Activity> Project(InputSalarie input, Context context)
+    public abstract RegimeId Id { get; }
+
+    public IReadOnlyCollection<Activity> Project(InputSalarie input, Context context)
     {
         var activities = new List<Activity>();
         var salary = input.BaseSalary;
@@ -107,65 +122,69 @@ public abstract class BaseRegimeSalaireProjector<TData> : RegimeProjectorBase<In
 }
 ```
 
-This enforces the **Open-Closed Principle (OCP)**. Adding a new regime (e.g., MSA) means adding a class, not modifying a central service.
-
 ---
 
 ### 3. High-Performance Orchestration
 
 Architecture must serve performance. In a modular monolith, loading data for 42 regimes when a user only contributed to 2 is a performance sin.
 
-#### The Global Flow & Loader Pattern
+#### The Loader Pattern
+We use a specific Port to identify and fetch only the required legal data.
 
-The **Orchestrator** inspects the `CareerContext` and instructs the **LoaderAdapter** to fetch only the necessary Reference Tables (aggregates of legal data).
-
-```mermaid
-sequenceDiagram
-    participant App as Orchestrator
-    participant Adapter as LoaderAdapter
-    participant DI as Container
-    participant Strategy as ProjectionStrategy
-    participant Projector as CnavProjector
-
-    App->>Adapter: Identify Required Regimes (UserContext)
-    Adapter->>Adapter: Filter Loaders (O(1))
-    
-    loop For Each Required Regime
-        Adapter->>DI: Load Reference Data (EF Core)
-        note right of Adapter: No "Over-fetching"
-    end
-
-    App->>Strategy: Execute Projection
-    Strategy->>Projector: Project(Input)
-    Projector-->>Strategy: Activities (Value Objects)
+```csharp
+// The Port for optimized data loading
+public interface IRegimeLoader
+{
+    IReadOnlyCollection<RegimeId> GetRequiredRegimes(CareerHistory history);
+    Task LoadReferenceDataAsync(IEnumerable<RegimeId> regimeIds);
+}
 ```
 
-#### Concurrency & Persistence Realities
+#### The Orchestrator
+The Orchestrator coordinates the workflow without knowing the details of the laws.
 
-While Domain logic is pure, the **Infrastructure Layer** has limits. Due to the transactional nature of EF Core (Unit of Work), the Orchestrator respects a sequential contract exposed by the Adapters. We acknowledge the **object-relational impedance mismatch**: we map rich Domain Models to normalized SQL schemas optimized for reading. It's a price worth paying for Domain clarity.
+```csharp
+// Application Layer: The Orchestrator
+public class CalculationOrchestrator
+{
+    private readonly IEnumerable<IRegimeProjector> _projectors;
+    private readonly IRegimeLoader _loader;
+
+    public async Task<CareerProjection> ExecuteAsync(UserContext user)
+    {
+        // 1. Identify and Pre-load only required data
+        var requiredIds = _loader.GetRequiredRegimes(user.Career);
+        await _loader.LoadReferenceDataAsync(requiredIds);
+        
+        // 2. Polymorphic execution
+        var allActivities = _projectors
+            .Where(p => requiredIds.Contains(p.Id))
+            .SelectMany(p => p.Project(user.Input, user.Context))
+            .ToList();
+
+        return new CareerProjection(allActivities);
+    }
+}
+```
 
 ---
 
 ### 4. Trade-offs: The Architect's "No Free Lunch"
 
 #### 1. Why not a Rule Engine?
-
 A common critique. But French pensions involve deep temporal dependencies. A DSL would have become as complex as C# itself. We chose a strongly typed **Strategy pattern** over a "black box" engine for better debugging and maintainability.
 
 #### 2. The "Inheritance vs Composition" Controversy
-
 Purists argue against Base Classes. We accepted this coupling **deliberately**. The "Annual Loop" is a **Legal Invariant**. By enforcing it via Inheritance, we prevent developers from accidentally deviating from regulatory standards. We traded flexibility for **Compliance Safety**.
 
 #### 3. Fragmentation vs. Simplicity
-
-Moving from a script to a decoupled architecture increases "file explosion." Logic is spread across Base Classes, Ports, and Adapters. Understanding the "whole picture" now requires navigating the class hierarchy.
+Moving from a script to a decoupled architecture increases "file explosion." Logic is now spread across Base Classes, Ports, and Adapters. Understanding the "whole picture" requires navigating the class hierarchy, which we mitigated with exhaustive documentation.
 
 ---
 
 ### 5. Ensuring Correctness: The Safety Net
 
 With great abstraction comes great responsibility. To ensure non-regression, we use:
-
 * **Golden Master Testing:** Comparing JSON outputs against legacy systems to guarantee parity to the cent.
 * **Property-Based Testing:** Ensuring invariants (e.g., max 4 quarters/year) are never violated by any combination of rules.
 
