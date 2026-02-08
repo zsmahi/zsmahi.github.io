@@ -1,14 +1,14 @@
 ---
 title: "Designing a Regulated Policy Engine: Taming Combinatorial Complexity with Hexagonal Architecture"
 author: zsmahi
-date: 2025-02-08 21:03:59 +0200
+date: 2026-02-08 21:03:59 +0200
 categories: [System Design, Software Architecture, .NET, Computational Logic]
 tags: [policy-engine, hexagonal-architecture, strategic-ddd, c#, reversibility]
 pin: true
 math: true
 mermaid: true
 image:
-  path: /assets/img/posts/20250207/diagram-4x.png
+  path: /assets/img/posts/20260207/diagram-4x.png
 ---
 
 ## The Structural Problem: Combinatorial Entropy
