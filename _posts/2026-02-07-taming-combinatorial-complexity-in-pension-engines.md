@@ -1,7 +1,7 @@
 ---
-title: "Designing a Regulated Policy Engine: Taming Combinatorial Complexity with Hexagonal Architecture"
+title: "EP08- Designing a Regulated Policy Engine: Taming Combinatorial Complexity with Hexagonal Architecture"
 author: zsmahi
-date: 2026-02-08 21:03:59 +0200
+date: 2026-02-07 21:03:59 +0200
 categories: [System Design, Software Architecture, .NET, Computational Logic]
 tags: [policy-engine, hexagonal-architecture, strategic-ddd, c#, reversibility]
 pin: true
