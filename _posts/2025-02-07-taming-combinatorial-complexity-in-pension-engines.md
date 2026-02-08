@@ -1,9 +1,9 @@
 ---
-title: "Surviving the 42 Regimes: Taming French Pension Complexity with DDD"
+title: "Taming Combinatorial Complexity in French Pension Engines: A DDD & Hexagonal Journey"
 author: zsmahi
-date: 2025-02-07 21:03:59 +0200
+date: 2025-02-08 21:03:59 +0200
 categories: [System Design, Domain-Driven Design, .NET, Architecture]
-tags: [clean-architecture, design-patterns, c#, performance, real-world-stories]
+tags: [clean-architecture, design-patterns, c#, performance, trade-offs]
 pin: true
 math: true
 mermaid: true
@@ -11,110 +11,79 @@ image:
   path: /assets/img/posts/20250207/diagram-4x.png
 ---
 
-## The "God Class" Must Die
+## The Engineering Challenge: Absorbing Legal Entropy
 
-If you’ve ever worked in the pension industry, you know the feeling. You open a solution, look for the calculation logic, and find yourself staring into the abyss: a 15,000-line procedural monster full of nested `if/else` statements trying to handle 40 years of legislative changes.
+In the pension industry, complexity isn't just a hurdle; it’s the domain itself. When designing a national-scale projection engine, we aren't just writing code; we are modeling a massive **structural challenge**.
 
-When we started designing the new projection engine for a national-scale system, we faced a brutal reality. The complexity wasn't just "high"; it was combinatorial.
+We can visualize the "Complexity Space" of the system as:
 
 $$
-\text{Pain Level} \approx (\text{42 Regimes}) \times (\text{Dozens of Career Events}) \times (\text{40 Years of Projection})
+\text{Complexity} \approx (\text{HypothesisTypes}) \times (\text{ContributedRegimes}) \times (\text{ProjectionYears})
 $$
 
-We have the CNAV (private sector), Agirc-Arrco (complementary), MSA (farmers)... each with its own vocabulary, its own math, and its own exceptions. A standard layered architecture wasn't going to cut it. We didn't just need "clean code"; we needed a survival strategy.
-
-Here is how we moved from a fragile monolith to a battle-hardened **Hexagonal Architecture**.
+With 42+ distinct regimes (CNAV, Agirc-Arrco, MSA...), dozens of career scenarios, and 40-year projections, a standard imperative approach—nested `if/else` logic—fails to scale. The complexity grows multiplicatively. This is how we transitioned from a monolithic procedural engine to a **Hexagonal Architecture** powered by **DDD**.
 
 ---
 
-### 1. The Domain: Stop Coding, Start Listening
+### 1. Domain Analysis: Ubiquitous Language as a Compass
 
-The mistake we made in the legacy system was treating the pension rules as just "data processing."
+The legacy system suffered from an "Anemic Domain Model"—logic was a thin layer scattered across UI and Services. We reframed the problem using **Domain-Driven Design**:
 
-We paused everything and went back to the whiteboard with the actuaries. We realized our "Ubiquitous Language" was broken. We were talking about *Services* and *Managers*; they were talking about *Projectors* and *Regimes*.
+* **The Invariant (Time):** Regardless of the regime, a projection is a temporal loop iterating from `CurrentYear` to `RetirementYear`.
+* **The Variant (Law):** The rules for acquiring rights change per regime (Quarters for CNAV, Points for Agirc-Arrco).
+* **The Aggregates:** `CareerProjection` acts as the Aggregate Root, ensuring consistency between `Activities` (Value Objects).
 
-We reframed the entire problem around two concepts:
-
-1. **The Invariant (Time):** Whether you are a farmer or a CEO, a career projection is *always* a loop from today until retirement. That never changes.
-2. **The Variant (The Law):** *How* you accrue rights inside that loop changes completely depending on the regime.
-
-This distinction was our "Eureka" moment. It meant we could isolate the **Time Loop** (the engine) from the **Legal Rules** (the plugins).
+> **A Note on Ubiquitous Language:**
+> In our context, **"Projector"** is a core domain concept defined by business experts. It’s not a technical read-model (CQRS); it is the actuarial engine responsible for forecasting rights over time.
 
 ---
 
-### 2. The Architecture: Building a Blast Shield
+### 2. Architecture: Building the Blast Shield
 
-We chose **Hexagonal Architecture (Ports & Adapters)**. Not because it’s trendy, but because we needed a quarantine zone.
-
-We needed to be able to say: *"Inside this hexagon, the database does not exist. The legacy API does not exist. Only the math exists."*
-
-Here is what our mental model looks like. Notice how everything points *inward*. The Domain is king, and the database is just a detail we deal with later.
+We adopted a strict **Hexagonal Architecture** (Ports & Adapters) to isolate the Domain. We don't see layers; we see a **Driving Side** (Tests, API) and a **Driven Side** (Infrastructure, Databases).
 
 ```mermaid
 graph LR
-    classDef lavender fill:#e6e6ff,stroke:#666,stroke-width:1px,color:#000000
-    classDef core fill:#ff99ff,stroke:#333,stroke-width:2px,color:#000000
+    classDef lavender fill:#e6e6ff,stroke:#666,stroke-width:1px,color:black
+    linkStyle default stroke:#333,stroke-width:1px,fill:none
 
-    %% --- DRIVING SIDE ---
-    subgraph Driving[Driving Side Primary Adapters]
-        direction TB
+    subgraph Driving ["Driving Side<br>(Primary Adapters)"]
+        style Driving fill:#ffffcc,stroke:#333,stroke-width:1px,color:black,padding:30px
         API["API / UI"]
-        GM["Golden Master Tests"]
+        Test["Golden Master Tests"]
     end
 
-    %% --- HEXAGON CORE ---
-    subgraph Hexagon[Hexagon Domain & Application]
-        direction TB
+    subgraph Core ["Hexagon<br>(Domain & Application)"]
+        style Core fill:#ff99ff,stroke:#333,stroke-width:1px,color:black,padding:20px
         Orch["Orchestrator"]
-        Ports["<< Port >> <br/> IRegimeProjector"]
-        Domain["Domain Model <br/> Career, Activity"]
+        Ports["<< Ports >><br>IRegimeProjector"]
+        Domain["Domain Model<br>(Career, Activity)"]
     end
 
-    %% --- DRIVEN SIDE ---
-    subgraph Driven[Driven Side Secondary Adapters]
-        direction TB
-        SQL[("Database <br/> Reference Tables")]
-        Cnav["CnavProjector <br/> Template Method"]
-        Msa["MsaProjector <br/> Template Method"]
+    subgraph Driven ["Driven Side<br>(Secondary Adapters)"]
+        style Driven fill:#ffffcc,stroke:#333,stroke-width:1px,color:black,padding:20px
+        SQL[("Database")]
+        Cnav["CnavProjector"]
+        Msa["MsaProjector"]
     end
 
-    %% --- LIENS ---
     API --> Orch
-    GM --> Orch
+    Test --> Orch
     Orch --> Ports
-
-    %% Dependency Inversion
-    Cnav -.->|Implements| Ports
-    Msa -.->|Implements| Ports
-
-    %% Database calls
+    Cnav -->|Implements| Ports
+    Msa -->|Implements| Ports
     Cnav --> SQL
     Msa --> SQL
 
-    %% --- APPLICATION DU STYLE ---
-    class API,GM,SQL,Cnav,Msa lavender
-    class Orch,Ports,Domain core
-
-    style Driving fill:#ffffcc,stroke:#333,stroke-width:1px,color:#000000
-    style Hexagon fill:#ff99ff,stroke:#333,stroke-width:2px,color:#000000
-    style Driven fill:#ffffcc,stroke:#333,stroke-width:1px,color:#000000
+    class API,Test,Orch,Ports,Domain,SQL,Cnav,Msa lavender
 ```
 
----
+#### The Core Pattern: Template Method for Temporal Loops
 
-### 3. The Controversial Choice: Inheritance over Composition
-
-I can hear the purists screaming already: *"Favor Composition over Inheritance!"*
-
-Usually, I agree. But in this specific domain, we made a conscious choice to use the **Template Method Pattern**.
-
-Why? Because the "Annual Loop" isn't just a behavior; it's a **Legal Invariant**. We couldn't risk a developer implementing a new Regime (say, for Lawyers) and "forgetting" to apply the inflation rate or skipping a year.
-
-We locked the loop in a `base class`. It handles the plumbing. The concrete classes only handle the business rules.
-
-**The Base Class (The Enforcer):**
+To avoid duplicating the "Time Loop" across 42 regimes, we factorized the invariant mechanics into a **Domain Service**.
 
 ```csharp
+// The Domain Service Base: Manages the Invariant (Time)
 public abstract class BaseRegimeSalaireProjector<TData> : RegimeProjectorBase<InputSalarie, TData>
 {
     public override IReadOnlyCollection<Activity> Project(InputSalarie input, Context context)
@@ -122,13 +91,11 @@ public abstract class BaseRegimeSalaireProjector<TData> : RegimeProjectorBase<In
         var activities = new List<Activity>();
         var salary = input.BaseSalary;
 
-        // We enforce the loop here. 
-        // No junior dev can accidentally break the space-time continuum.
         foreach (var period in context.ProjectionPeriod.SplitByYear()) 
         {
             salary = salary.ApplyInflation(context.Rate);
             
-            // This is the only part the concrete class is allowed to touch:
+            // The Business Rule Hook (Variant)
             TData rights = CalculateRights(period, salary); 
             
             activities.Add(new SalariedActivity(period, rights));
@@ -140,56 +107,70 @@ public abstract class BaseRegimeSalaireProjector<TData> : RegimeProjectorBase<In
 }
 ```
 
-**The Concrete Class (The Business Logic):**
-This is where the CNAV complexity lives. It’s clean, focused, and testable.
+This enforces the **Open-Closed Principle (OCP)**. Adding a new regime (e.g., MSA) means adding a class, not modifying a central service.
 
-```csharp
-public sealed class CnavSalaireProjector : BaseRegimeSalaireProjector<CnavData>
-{
-    protected override CnavData CalculateRights(Year year, Money salary)
-    {
-        // Pure business logic. No loop, no infrastructure.
-        var limit = _cnavReferential.GetCeiling(year);
-        var quarters = _cnavCalculator.ComputeQuarters(salary, limit);
-        return new CnavData(quarters);
-    }
-}
+---
+
+### 3. High-Performance Orchestration
+
+Architecture must serve performance. In a modular monolith, loading data for 42 regimes when a user only contributed to 2 is a performance sin.
+
+#### The Global Flow & Loader Pattern
+
+The **Orchestrator** inspects the `CareerContext` and instructs the **LoaderAdapter** to fetch only the necessary Reference Tables (aggregates of legal data).
+
+```mermaid
+sequenceDiagram
+    participant App as Orchestrator
+    participant Adapter as LoaderAdapter
+    participant DI as Container
+    participant Strategy as ProjectionStrategy
+    participant Projector as CnavProjector
+
+    App->>Adapter: Identify Required Regimes (UserContext)
+    Adapter->>Adapter: Filter Loaders (O(1))
+    
+    loop For Each Required Regime
+        Adapter->>DI: Load Reference Data (EF Core)
+        note right of Adapter: No "Over-fetching"
+    end
+
+    App->>Strategy: Execute Projection
+    Strategy->>Projector: Project(Input)
+    Projector-->>Strategy: Activities (Value Objects)
 ```
 
----
+#### Concurrency & Persistence Realities
 
-### 4. Performance: Don't Load the World
-
-Architecture is great, but if it takes 5 seconds to load, users will hate it.
-
-With 42 regimes, we couldn't just "Load All Data". If a user has only worked in the private sector, loading the rules for Civil Servants is a waste of memory.
-
-We implemented a **Dynamic Loader**. The Orchestrator looks at the user's career, identifies the relevant regimes, and injects *only* the necessary Adapters and Reference Tables. It keeps the memory footprint low and the startup time fast.
+While Domain logic is pure, the **Infrastructure Layer** has limits. Due to the transactional nature of EF Core (Unit of Work), the Orchestrator respects a sequential contract exposed by the Adapters. We acknowledge the **object-relational impedance mismatch**: we map rich Domain Models to normalized SQL schemas optimized for reading. It's a price worth paying for Domain clarity.
 
 ---
 
-### 5. The Honest Trade-offs
+### 4. Trade-offs: The Architect's "No Free Lunch"
 
-Let's be real: this architecture isn't free. It came with its own set of headaches.
+#### 1. Why not a Rule Engine?
 
-**1. Why not a Rule Engine?**
-We debated this for weeks. "Why not use a Rule Engine like Drools?"
-Because French pension rules are temporally coupled (*a decision in 1990 affects 2024*). Implementing that in a rule engine meant creating a custom DSL. Debugging a DSL at 3 AM is my definition of hell. We stuck to C# because type safety is the best documentation we have.
+A common critique. But French pensions involve deep temporal dependencies. A DSL would have become as complex as C# itself. We chose a strongly typed **Strategy pattern** over a "black box" engine for better debugging and maintainability.
 
-**2. The "File Explosion"**
-We went from one giant file to hundreds of small classes. For a new joiner, it’s intimidating. You can't just "scroll down" to read the logic anymore; you have to navigate the object graph. We had to invest heavily in onboarding and diagrams to help people find their way.
+#### 2. The "Inheritance vs Composition" Controversy
 
-**3. Complexity has to go somewhere**
-We didn't destroy the complexity; we just moved it. The complexity used to be in the `if` statements; now it's in the **Wiring** (Dependency Injection). If the DI container is misconfigured, the whole thing blows up. We had to write unit tests *for our DI container* to sleep at night.
+Purists argue against Base Classes. We accepted this coupling **deliberately**. The "Annual Loop" is a **Legal Invariant**. By enforcing it via Inheritance, we prevent developers from accidentally deviating from regulatory standards. We traded flexibility for **Compliance Safety**.
+
+#### 3. Fragmentation vs. Simplicity
+
+Moving from a script to a decoupled architecture increases "file explosion." Logic is spread across Base Classes, Ports, and Adapters. Understanding the "whole picture" now requires navigating the class hierarchy.
 
 ---
 
-### Conclusion: It's About Sanity, Not Just Code
+### 5. Ensuring Correctness: The Safety Net
 
-Transitioning to Hexagonal Architecture and DDD didn't magically simplify the French pension system. The laws are still complicated.
+With great abstraction comes great responsibility. To ensure non-regression, we use:
 
-But what it gave us was **predictability**.
+* **Golden Master Testing:** Comparing JSON outputs against legacy systems to guarantee parity to the cent.
+* **Property-Based Testing:** Ensuring invariants (e.g., max 4 quarters/year) are never violated by any combination of rules.
 
-Today, when the government passes a new reform for the MSA regime, we don't sweat. We create a new `MsaProjector2025`, plug it into the hexagon, and we know—we *know*—that we haven't broken the CNAV calculation.
+---
 
-In a system this complex, that peace of mind is worth every extra class file.
+### Conclusion
+
+Hexagonal Architecture isn't just about "Clean Code"—it's a mechanism for **absorbing legal entropy**. It allowed us to isolate business complexity, scale development across teams, and optimize performance by loading only what matters. In regulated domains, your architecture is your best defense against the chaos of evolving laws.
