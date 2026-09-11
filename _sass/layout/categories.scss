@@ -3,7 +3,7 @@
 */
 
 %category-icon-color {
-  color: gray;
+  color: var(--text-muted-color);
 }
 
 .categories {
@@ -55,7 +55,7 @@
   height: 1.7rem;
   border-radius: 50%;
   text-align: center;
-  color: #6c757d !important;
+  color: var(--text-muted-color) !important;
 
   i {
     position: relative;

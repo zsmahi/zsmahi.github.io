@@ -178,10 +178,8 @@ h1 + .post-meta {
       color: var(--link-color);
     }
 
-    &:hover {
-      &:not(.disabled)::before {
-        color: whitesmoke;
-      }
+    &:hover:not(.disabled)::before {
+      color: #161310 !important;
     }
 
     &.disabled {
@@ -190,7 +188,7 @@ h1 + .post-meta {
       pointer-events: auto;
       cursor: not-allowed;
       background: none;
-      color: gray;
+      color: var(--text-muted-color);
     }
 
     &.btn-outline-primary.disabled:focus {

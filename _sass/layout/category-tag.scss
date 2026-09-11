@@ -15,7 +15,7 @@
 
     /* dot */
     &::before {
-      background: #999999;
+      background: var(--link-color);
       width: 5px;
       height: 5px;
       border-radius: 50%;

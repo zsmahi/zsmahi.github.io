@@ -55,8 +55,8 @@
 }
 
 %link-hover {
-  color: #d2603a !important;
-  border-bottom: 1px solid #d2603a;
+  color: #e6cd8c !important;
+  border-bottom: 1px solid #e6cd8c;
   text-decoration: none;
 }
 
@@ -102,12 +102,12 @@
     font-style: normal;
     font-size: 80%;
     padding: 0;
-    color: #6d6c6c;
+    color: var(--text-muted-color);
   }
 }
 
 %sidebar-links {
-  color: rgba(117, 117, 117, 0.9);
+  color: var(--text-color);
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;

@@ -61,6 +61,11 @@
     <link rel="stylesheet" href="{{ site.data.origin[type].webfonts | relative_url }}">
   {% endif %}
 
+  <!-- Brand fonts, matching zsmahi.com -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500&display=swap">
+
   <!-- GA -->
   {% if jekyll.environment == 'production' and site.google_analytics.id != empty and site.google_analytics.id %}
     <link rel="preconnect" href="https://www.google-analytics.com" crossorigin="use-credentials">

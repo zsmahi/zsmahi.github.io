@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ZS">
+  <rect width="64" height="64" rx="14" fill="#0f1115"/>
+  <text x="31" y="33" text-anchor="middle" dominant-baseline="central"
+        font-family="'Outfit','Segoe UI',Arial,sans-serif" font-weight="700" font-size="30">
+    <tspan fill="#f8f9fa">ZS</tspan><tspan fill="#d4af37">.</tspan>
+  </text>
+</svg>

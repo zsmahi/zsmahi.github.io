@@ -90,7 +90,7 @@
 
 .pagination {
   color: var(--btn-patinator-text-color);
-  font-family: Lato, sans-serif;
+  font-family: $font-family-base;
 
   a:hover {
     text-decoration: none;
@@ -125,7 +125,7 @@
       cursor: not-allowed;
 
       .page-link {
-        color: rgba(108, 117, 125, 0.57);
+        color: var(--text-muted-color);
         border-color: var(--btn-paginator-border-color);
         background-color: var(--button-bg);
       }

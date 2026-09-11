@@ -18,6 +18,8 @@
   .year {
     height: 3.5rem;
     font-size: 1.5rem;
+    font-family: $font-family-heading;
+    font-weight: 600;
     position: relative;
     left: 2px;
     margin-left: -$timeline-width;
@@ -49,7 +51,7 @@
       border: 3px solid;
       background-color: var(--timeline-year-dot-color);
       border-color: var(--timeline-node-bg);
-      box-shadow: 0 0 2px 0 #c2c6cc;
+      box-shadow: 0 0 2px 0 rgba(201, 162, 75, 0.3);
       z-index: 1;
     }
   }
@@ -101,7 +103,7 @@
 
     &.day {
       font-size: 85%;
-      font-family: Lato, sans-serif;
+      font-family: $font-family-base;
     }
   }
 
@@ -127,7 +129,7 @@
       top: 1.35rem;
       left: 71px;
       background-color: var(--timeline-node-bg);
-      box-shadow: 0 0 3px 0 #c2c6cc;
+      box-shadow: 0 0 3px 0 rgba(201, 162, 75, 0.3);
       z-index: 1;
     }
   }

@@ -1,5 +1,9 @@
 #  The contact options.
 
+- type: website
+  icon: "fas fa-globe"
+  url: "https://www.zsmahi.com"
+
 - type: github
   icon: "fab fa-github"
 

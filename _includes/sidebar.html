@@ -14,6 +14,8 @@
             {% endif %}
           {% endcapture %}
         <img src="{{ avatar_url | strip }}" width="112" height="112" alt="avatar" onerror="this.style.display='none'">
+      {% else %}
+        <span class="logo-mark">ZS<span class="dot">.</span></span>
       {% endif %}
     </a>
 
