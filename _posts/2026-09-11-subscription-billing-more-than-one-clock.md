@@ -1,7 +1,7 @@
 ---
 title: "EP09- Why Your Subscription Billing Engine Needs More Than One Clock"
 author: zsmahi
-date: 2026-09-10 20:00:00 +0200
+date: 2026-09-11 20:00:00 +0200
 description: Two customers, same plan, same start date, different invoice. Why business rules that change over time need one binding policy per rule, not one global effective date.
 categories: [Blogging, System Design]
 tags: [Domain Driven Design, system design, .net, c#, architecture, temporal-versioning, temporal-patterns]
