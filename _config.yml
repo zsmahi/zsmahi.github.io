@@ -25,6 +25,9 @@ tagline: Zakaria SMAHI's personnal blog # it will display as the sub-title
 description: >- # used by seo meta and the atom feed
   Zakaria SMAHI's personnal blog, technical post, software engineering, C#, SQL Server, Azure DevOps
 
+# default social-sharing image (og:image) for pages without their own `image:`
+logo: /assets/img/favicons/apple-touch-icon.png
+
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
 url: "https://blog.zsmahi.com"
 
