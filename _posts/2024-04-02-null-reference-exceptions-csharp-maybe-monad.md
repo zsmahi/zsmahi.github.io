@@ -2,6 +2,7 @@
 title: EP07- Null Reference Exceptions in C#? Here's Why Maybe Monad is Your New Best Friend
 author: zsmahi
 date: 2024-04-02 23:59:59 +0200
+description: Null reference exceptions are C#'s billion-dollar mistake. The Maybe Monad, borrowed from functional programming, offers a safer way to handle absent values.
 categories: [Blogging, Coding]
 tags: [coding,c#, clean code, Functional Programming]
 pin: true

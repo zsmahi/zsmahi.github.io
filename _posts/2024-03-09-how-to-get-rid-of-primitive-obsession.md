@@ -2,6 +2,7 @@
 title: EP06- How to get rid of primitive obsession
 author: zsmahi
 date: 2024-03-09 22:00:00 +0200
+description: Why relying on raw strings, ints and bools instead of dedicated types, Primitive Obsession, makes C# code fragile, and how to replace them with value objects.
 categories: [Blogging, Coding]
 tags: [coding,c#, clean code, Domain Driven Design]
 pin: true

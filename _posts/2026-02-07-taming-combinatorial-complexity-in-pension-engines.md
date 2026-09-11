@@ -2,6 +2,7 @@
 title: "EP08- Designing a Regulated Policy Engine: Taming Combinatorial Complexity with Hexagonal Architecture"
 author: zsmahi
 date: 2026-02-07 21:03:59 +0200
+description: Forecasting pension rights across 42 legal regimes over 40 years causes combinatorial explosion. Hexagonal architecture isolates the policy core for testability.
 categories: [Blogging, System Design]
 tags: [policy-engine, hexagonal-architecture, strategic-ddd, c#, reversibility]
 pin: true

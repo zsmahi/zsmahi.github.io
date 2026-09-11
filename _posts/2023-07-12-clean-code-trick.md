@@ -2,6 +2,7 @@
 title: EP02- A cool C# clean code trick
 author: zsmahi
 date: 2023-07-12 21:00:00 +0200
+description: Replace long chains of OR comparisons in C# with a generic In extension method, plus an IEqualityComparer overload for custom equality checks.
 categories: [Blogging, Coding]
 tags: [coding,c#]
 pin: true

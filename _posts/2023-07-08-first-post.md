@@ -2,6 +2,7 @@
 title: EP00- First Post
 author: zsmahi
 date: 2023-07-08 16:11:00 +0200
+description: Zakaria SMAHI introduces this blog, notes from a senior .NET engineer on architecture, SQL Server, Azure DevOps, and the technical books worth reading.
 categories: [Blogging]
 tags: [.net, blogging, devops, sqlserver]
 pin: true

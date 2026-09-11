@@ -2,6 +2,7 @@
 title: EP05- Mastering EF Core- Deep Dive into Entity-to-Database Mapping
 author: zsmahi
 date: 2024-02-28 21:00:00 +0200
+description: A deep dive into how EF Core maps C# entities to database tables, conventions, Data Annotations, and Fluent API, and when to reach for each.
 categories: [Blogging, Coding]
 tags: [coding,c#]
 pin: true

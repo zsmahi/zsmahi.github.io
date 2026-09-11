@@ -2,6 +2,7 @@
 title: EP03- Deploying a Jekyll Website Using Docker
 author: zsmahi
 date: 2023-07-15 23:50:00 +0200
+description: How to containerize a Jekyll site with Docker, a Dockerfile plus build and run commands that remove the local Ruby and dependency setup hassle.
 categories: [Blogging, Coding]
 tags: [jekyll,docker, automation]
 pin: true

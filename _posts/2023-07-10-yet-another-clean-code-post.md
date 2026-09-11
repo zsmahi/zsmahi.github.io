@@ -2,6 +2,7 @@
 title: EP01- Yet another post about clean code book
 author: zsmahi
 date: 2023-07-10 23:00:00 +0200
+description: A mindmap summary of Robert C. Martin's Clean Code, the book's key ideas distilled into one visual reference for writing more maintainable code.
 categories: [Blogging, Books]
 tags: [coding,books]
 pin: true

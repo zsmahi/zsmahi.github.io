@@ -2,6 +2,7 @@
 title: EP04- Improving Asynchronous Programming in C# with Fluent API Style Task Chaining
 author: zsmahi
 date: 2023-07-29 21:00:00 +0200
+description: Task.ContinueWith gets messy for chained async C# calls. Then and Catch extension methods bring Promise-like fluency and cleaner error handling.
 categories: [Blogging, Coding]
 tags: [coding,c#]
 pin: true

@@ -3,12 +3,16 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-{% assign page_description = page.content | strip_html | replace: "\n", " " | truncate: 160 %}
+{% if page.description %}
+  {% assign page_description = page.description %}
+{% else %}
+  {% assign page_description = page.content | strip_html | replace: "\n", " " | truncate: 160 %}
+{% endif %}
 {% if page_description == blank %}
   {% assign page_description = site.description %}
 {% endif %}
-<meta name="description" content="{{ page_description }}" />
-<meta property="og:description" content="{{ page_description }}" />
+<meta name="description" content="{{ page_description | xml_escape }}" />
+<meta property="og:description" content="{{ page_description | xml_escape }}" />
 {% unless page.image %}
   <meta property="og:image" content="{{ site.logo | absolute_url }}" />
   <meta name="twitter:image" content="{{ site.logo | absolute_url }}" />
