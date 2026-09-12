@@ -172,7 +172,7 @@ public sealed class Subscription
 {
     public SubscriptionId Id { get; }
 
-    public PricingSnapshot Pricing { get; }                  // bound at subscription
+    public PricingSnapshot Pricing { get; }          // bound at subscription
     public RuleVersion DiscountVersion { get; private set; } // bound at trigger event
     public SeatTier Tier { get; private set; }
 
@@ -220,9 +220,9 @@ public sealed record VersionTuple(
 public sealed class VersionResolver(IRuleCatalog<TaxRule> taxes)
 {
     public VersionTuple Resolve(Subscription sub, DateOnly invoiceDate) => new(
-        Price: sub.Pricing.PriceVersion,            // bound at subscription
-        Discount: sub.DiscountVersion,              // bound at last trigger event
-        Tax: taxes.VersionInForceOn(invoiceDate)    // in force on the invoice date
+        Price: sub.Pricing.PriceVersion,           // bound at subscription
+        Discount: sub.DiscountVersion,             // bound at last trigger event
+        Tax: taxes.VersionInForceOn(invoiceDate)   // in force on the invoice date
     );
 }
 ```
@@ -252,6 +252,7 @@ What worked better for me is to treat compatibility as a first-class concept. A 
 public enum Verdict { Allowed, Forbidden }
 
 // A null version means "any version" on that axis
+
 public sealed record CompatibilityRule(
     string Id,
     RuleVersion? Price,
@@ -297,16 +298,11 @@ The compatibility catalogue has versions too. Recalculate Alice's September 2026
 
 ```text
 Invoice date          2026-09-01
-
 Seats                 5
-
 Price version         v1
-
 Discount version      v2   (bound at her March 2025 renewal)
-
-Tax version            v2
-
-Compatibility set      v7
+Tax version           v2
+Compatibility set     v7
 ```
 
 Replaying it means using exactly those, never the current ones. A past result shouldn't depend on today's rules.
@@ -372,6 +368,7 @@ public sealed class CompatibilityRuleActivation(
             return ActivationResult.Blocked(rule.Id, undecided); // doubt blocks, it never defaults
 
         catalog.Activate(rule, decisions);
+
         return ActivationResult.Activated(rule.Id);
     }
 }
