@@ -138,7 +138,7 @@ Same customer, three axes, three different clocks.
 
 ### Same seniority, different rules
 
-Now take Bob: same plan, same start month. In October 2024 he went from 5 to 10 seats, a trigger event, so his discount was bound again, this time to v2. Alice had no event until March 2025. In November 2024, they have the same plan, the same seniority, and different discount rules. Nothing is broken, but if nobody on the team expects it, it will come back as a support ticket.
+Now take Bob: same plan, same start date. In October 2024 he went from 5 to 10 seats, a trigger event, so his discount was bound again, this time to v2. Alice had no event until March 2025. In November 2024, they have the same plan, the same seniority, and different discount rules. Nothing is broken, but if nobody on the team expects it, it will come back as a support ticket.
 
 So the state of a subscription can't be described by one date, not even one "effective date". It's a *tuple of versions*, one per axis:
 
@@ -282,7 +282,9 @@ var rule = new CompatibilityRule(
     Reason: "Launch offer was designed for the €39 price, not for grandfathered ones");
 ```
 
-This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence, a fourth axis left out of the record above to keep the example small. Written as a `CompatibilityRule` — `Discount: Discounts.V2, Cadence: Monthly, Verdict: Forbidden` — with a `Reason` instead of a ticket number in a comment, it stops being a stray branch and becomes something the business can actually see and review.
+`Matches` only answers whether a rule applies to a tuple. What it says about that tuple — `Allowed` or `Forbidden` — is the separate job of `Verdict`.
+
+This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence. Cadence is a fourth axis in the full model; I leave it out of the record above to keep the example small. Written the same way — a rule that forbids `Discounts.V2` for monthly plans, with a `Reason` instead of a ticket number in a comment — it stops being a stray branch and becomes something the business can actually see and review.
 
 Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (cadence, usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
 
@@ -298,7 +300,7 @@ When should you check? For a long time I only checked when the tuple was created
 
 **At every billing run.** Some axes move on their own. The tax is resolved at evaluation, so it changes with no event on the subscription. Imagine tax v3 requires every discount to appear as its own invoice line, and discount v1 was built as a silent multiplier on the price. A customer still bound to discount v1 was fine last month. This month their tuple is (Price v1, Discount v1, Tax v3), and nobody touched their account. Adding a new compatibility rule has the same effect. If you only validate at state transitions, these cases go straight to the invoice.
 
-Because the rules are data, you can also audit them like a decision table, looking for *gaps* (a possible tuple that no rule covers, so undefined behavior in a closed table) and *overlaps* (two rules disagreeing on the same tuple). I treat an overlap as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order. If two rules disagree, the system should stop, not pick one.
+Because the rules are data, you can also audit them like a decision table, looking for *gaps* (possible tuples for which the catalogue has no answer) and *overlaps* (two rules disagreeing on the same tuple). I treat an overlap as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order. If two rules disagree, the system should stop, not pick one.
 
 ### Replaying the past
 
@@ -382,7 +384,7 @@ public sealed class CompatibilityRuleActivation(
 }
 ```
 
-The decision is made per affected state, not per subscription. In practice, a handful of these states usually covers thousands of subscriptions, so the business gets a short list to go through, not an endless one.
+The decision is made per affected state, not per subscription. In many systems, a handful of these states can cover thousands of subscriptions, so the business gets a short list to go through, not an endless one.
 
 > When the system is in doubt, it should stop and ask, not quietly fall back to some default behavior. A blocked activation is annoying for a day. A silent default can be wrong for years.
 
