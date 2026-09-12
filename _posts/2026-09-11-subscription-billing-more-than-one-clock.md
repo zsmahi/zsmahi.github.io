@@ -39,7 +39,7 @@ That's the problem I want to look at: not one rule changing over time, but sever
 > **TL;DR**
 >
 > - Different business rules follow different clocks: the price is bound at subscription, the discount at business events, the tax at each invoice.
-> - The real state of a subscription is a tuple of versions, one per rule, not a date.
+> - The state used to evaluate a subscription is a tuple of versions, one per rule, not a date.
 > - Compatibility between rule versions should be data you can list and test, not scattered `if` statements.
 > - A new rule shouldn't go live until someone decides what happens to the existing customers it affects.
 
@@ -147,7 +147,7 @@ So the state of a subscription can't be described by one date, not even one "eff
 | Alice | v1 (€19) | v1 (10% after 12 months) | v1 (20%) |
 | Bob | v1 (€19) | v2 (15% after 24 months) | v1 (20%) |
 
-The tuple only answers one question: which versions is this customer bound to? Whether that particular combination is one the business would sign off on is a different question — section 3 is about that. For now, let's see how the tuple itself gets represented.
+The tuple only answers one question: which versions are used for this evaluation? Whether that particular combination is one the business would sign off on is a different question — section 3 is about that. For now, let's see how the tuple itself gets represented.
 
 ### Modeling it
 
@@ -235,7 +235,7 @@ public sealed class VersionResolver(IRuleCatalog<TaxRule> taxes)
 
 The engine never goes to "fetch the current price". It reads what's bound, or resolves with the axis's own policy, and each axis becomes a lookup: version N in, parameters out. Adding a new version is then mostly a new row in a table, not a new `if`. "Mostly", because a version that changes the *shape* of the calculation still needs code, but as a new strategy next to the old ones, without touching the customers bound to them.
 
-That's representation solved: each axis knows what it's bound to. It says nothing about whether a given combination across axes should exist at all.
+That's representation solved: each axis knows which version applies to it. It says nothing about whether a given combination across axes should exist at all.
 
 ---
 
