@@ -94,7 +94,7 @@ Look at the dates this method uses. `StartDate` for the price (inside `GetMonthl
 
 The discount check is the most interesting one. What it really tries to answer is "which discount rule did this customer get at their last renewal?". But the system never stored that answer, so the code tries to rebuild a past decision from the current state, using a date as a clue, every single time we send an invoice.
 
-The `IsAnnual` condition has its own story. At some point, someone decided that the new discount only applies to annual plans, which is probably a good decision. But it sits inside an `else if`, next to a comment pointing to a ticket, and in six months nobody will remember it's there.
+The `IsAnnual` condition has its own story. At some point, someone decided that the new discount only applies to annual plans, which is probably a good decision. But it sits inside an `else if`, next to a comment pointing to a ticket, and in six months nobody will remember it's there. *(We'll come back to exactly where this condition belongs once the model has a proper place for it.)*
 
 And the combinations add up fast. Three price versions, two discount versions, two tax versions: that's already 12 possible combinations. Add one new version per rule per year, and after a few years you're in the hundreds. To be clear, nobody needs to implement all of them. The combinations form a Cartesian product: it's the space of states your system *could* be in. Some of them are valid, some should be forbidden, some can simply never happen. This code can't tell you which is which:
 
@@ -276,7 +276,9 @@ var rule = new CompatibilityRule(
     Reason: "Launch offer was designed for the €39 price, not for grandfathered ones");
 ```
 
-The three nullable fields keep the example readable. Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice.
+This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence. Written as a `CompatibilityRule` (`Discount: Discounts.V2, Verdict: Forbidden` when cadence is monthly, with a `Reason` instead of a ticket number in a comment), it stops being a stray branch and becomes something the business can actually see and review.
+
+The three nullable fields keep the example readable. Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
 
 It helps to draw it as a table: one column per price, one row per discount. Each cell is a combination, and the rules say which cells are allowed:
 
