@@ -1,13 +1,22 @@
 ---
 title: "EP09- Why Your Subscription Billing Engine Needs More Than One Clock"
+
 author: zsmahi
+
 date: 2026-09-11 20:00:00 +0200
+
 description: Two customers, same plan, same start date, different invoice. Why business rules that change over time need one binding policy per rule, not one global effective date.
+
 categories: [Blogging, System Design]
+
 tags: [Domain Driven Design, system design, .net, c#, architecture, temporal-versioning, temporal-patterns]
+
 pin: true
+
 math: false
+
 mermaid: false
+
 image:
   path: /assets/img/posts/20260911/cover-linkedin.png
   alt: Same plan, same start date, different invoice
@@ -24,13 +33,16 @@ The first implementation is usually simple: store the subscription date, add an 
 That's the problem I want to look at: not one rule changing over time, but several, each at its own pace. I've run into it in more than one rule engine, and it took me a while to understand what was really going wrong.
 
 > The goal here isn't to build a full billing framework or handle system-wide migrations—that depends heavily on your stack. It's about shifting how we model time and state when business rules diverge.
+
 {: .prompt-info }
 
 > **TL;DR**
+>
 > - Different business rules follow different clocks: the price is bound at subscription, the discount at business events, the tax at each invoice.
 > - The real state of a subscription is a tuple of versions, one per rule, not a date.
 > - Compatibility between rule versions should be data you can list and test, not scattered `if` statements.
 > - A new rule shouldn't go live until someone decides what happens to the existing customers it affects.
+
 {: .prompt-tip }
 
 ---
@@ -73,6 +85,7 @@ public decimal GetMonthlyAmount(Subscription sub, DateOnly invoiceDate)
     }
 
     var vatRate = invoiceDate < new DateOnly(2025, 1, 1) ? 0.20m : 0.21m;
+
     return price * (1 + vatRate);
 }
 ```
@@ -91,7 +104,7 @@ And the combinations add up fast. Three price versions, two discount versions, t
 
 I didn't get this right the first time. The first version I designed of an engine like this was built on a simple idea: at any given date, exactly one version of each rule is in force. On paper, it was clean and easy to explain, and I defended it for a while.
 
-It held until the first transition period. New terms were announced, but for several months the old ones and the new ones were both valid at the same time, and which one applied depended on the customer's situation, not on the date. My model had no way to say that. Then came a second problem: a promise that no existing customer would lose a benefit they already had because of the change. For some customers, that meant looking at the old rule and the new one, and keeping whichever was better for them. At that point, "which rule is in force today?" was clearly the wrong question. The right one was: which version is *this* customer bound to, and why?
+It held until the first transition period. New terms were announced, but for several months the old terms and the new ones were both valid at the same time, and which one applied depended on the customer's situation, not on the date. My model had no way to say that. Then came a second problem: a promise that no existing customer would lose a benefit they already had because of the change. For some customers, that meant looking at the old rule and the new one, and keeping whichever was better for them. At that point, "which rule is in force today?" was clearly the wrong question. The right one was: which version is *this* customer bound to, and why?
 
 That's when I understood that the number of dates was never really the issue. What hurts is treating "the date" as one shared variable, when these rules have nothing to do with each other and each one needs its own clock.
 
@@ -104,7 +117,9 @@ None of this is new territory. Martin Fowler's [temporal patterns](https://marti
 Let's call each independent rule (price, discount, tax) an *axis*. Each axis has a policy that says which moment decides its version. I've found that three patterns cover a lot of real cases.
 
 1. **Binding at subscription.** The version is chosen once, when the customer subscribes, and never moves. That's the base price: Alice's was decided in March 2022. (A plan change counts as a new agreement, with a new snapshot.)
+
 2. **Resolution at evaluation.** The version is looked up at each calculation, using the calculation date. That's the tax: nobody gets a grandfathered VAT rate. Strictly speaking, nothing is bound here, but "use the version in force at evaluation time" is still a decision.
+
 3. **Binding at trigger event.** The version is chosen when a business event happens, and stays until the next one. That's the loyalty discount: it's picked again at each renewal or tier change.
 
 Three words get mixed up a lot here, and I've seen teams confuse them for a long time. Discount v2 has a *validity period*: it's in force from July 2024. Alice is *bound* to v1 since her March 2024 renewal. Her November 2024 invoice is *evaluated* at that date. In November 2024, v2 is in force and Alice is still on v1. Both are true.
@@ -141,6 +156,7 @@ RuleVersion Resolve(RuleType type, DateOnly effectiveDate);
 One method for every rule looks clean, but it brings back the original mistake: it assumes every rule answers to the same kind of date. The caller has to know which date to pass for each rule (subscription date? invoice date? last renewal or last tier change?), and the business meaning ends up scattered across call sites again. I'd rather make each binding policy visible where it happens.
 
 > The code here shows the model, not a production implementation. With large volumes of data, you'll make infrastructure trade-offs (storage, indexing, read models, caching). They matter, but they don't change the model, so I'm leaving them out.
+
 {: .prompt-info }
 
 First, the price. It's *not* an attribute of `Plan`, otherwise changing it would change it for everyone. It's an immutable value object captured at subscription and attached to the `Subscription` aggregate. (Close to Fowler's Snapshot, but not quite: his is a view of an object as at a given date, reading through to the underlying object; this one is a copy taken once, at binding time.)
@@ -155,6 +171,7 @@ public sealed record PricingSnapshot(
 public sealed class Subscription
 {
     public SubscriptionId Id { get; }
+
     public PricingSnapshot Pricing { get; }                  // bound at subscription
     public RuleVersion DiscountVersion { get; private set; } // bound at trigger event
     public SeatTier Tier { get; private set; }
@@ -184,6 +201,7 @@ public sealed class ChangeTierHandler(
         var discountVersion = discounts.VersionInForceOn(command.EffectiveOn);
 
         subscription.ChangeTier(command.NewTier, discountVersion);
+
         await subscriptions.SaveAsync(subscription);
     }
 }
@@ -202,9 +220,9 @@ public sealed record VersionTuple(
 public sealed class VersionResolver(IRuleCatalog<TaxRule> taxes)
 {
     public VersionTuple Resolve(Subscription sub, DateOnly invoiceDate) => new(
-        Price:    sub.Pricing.PriceVersion,           // bound at subscription
-        Discount: sub.DiscountVersion,                // bound at last trigger event
-        Tax:      taxes.VersionInForceOn(invoiceDate) // in force on the invoice date
+        Price: sub.Pricing.PriceVersion,            // bound at subscription
+        Discount: sub.DiscountVersion,              // bound at last trigger event
+        Tax: taxes.VersionInForceOn(invoiceDate)    // in force on the invoice date
     );
 }
 ```
@@ -243,9 +261,9 @@ public sealed record CompatibilityRule(
     string Reason)
 {
     public bool Matches(VersionTuple t) =>
-        (Price    is null || Price    == t.Price) &&
+        (Price is null || Price == t.Price) &&
         (Discount is null || Discount == t.Discount) &&
-        (Tax      is null || Tax      == t.Tax);
+        (Tax is null || Tax == t.Tax);
 }
 
 var rule = new CompatibilityRule(
@@ -278,12 +296,17 @@ Because the rules are data, you can also audit them like a decision table, looki
 The compatibility catalogue has versions too. Recalculate Alice's September 2026 invoice in 2030 with the 2030 catalogue, and you may get a different amount. That's not a recalculation anymore, it's a new invoice. An issued invoice never changes; replaying it is for checking it or preparing a credit note. So each invoice records its inputs and the versions it used:
 
 ```text
-Invoice date         2026-09-01
-Seats                5
-Price version        v1
-Discount version     v2   (bound at her March 2025 renewal)
-Tax version          v2
-Compatibility set    v7
+Invoice date          2026-09-01
+
+Seats                 5
+
+Price version         v1
+
+Discount version      v2   (bound at her March 2025 renewal)
+
+Tax version            v2
+
+Compatibility set      v7
 ```
 
 Replaying it means using exactly those, never the current ones. A past result shouldn't depend on today's rules.
@@ -313,9 +336,11 @@ So the rule isn't "always freeze". The rule is that the engine never decides whe
 
 ```text
 Axis
- ├── Binding policy    → when is a version selected?
- └── Evolution policy  → what happens to existing bindings
-                         when the rules change?
+
+├── Binding policy   → when is a version selected?
+
+└── Evolution policy → what happens to existing bindings
+                       when the rules change?
 ```
 
 I started this article talking about clocks, and I think this is where it actually ends up: each axis needs its own clock, and each clock needs its own answer for the past.
@@ -325,7 +350,7 @@ On the architecture side, this has a direct consequence. **Activating a new `Com
 ```csharp
 public sealed record EvolutionDecision(
     VersionTuple AffectedState,
-    DecisionKind Kind,   // Freeze | Migrate
+    DecisionKind Kind, // Freeze | Migrate
     string DecidedBy,
     DateOnly ReviewBy);
 
@@ -355,11 +380,19 @@ public sealed class CompatibilityRuleActivation(
 The decision is made per affected state, not per subscription. In practice, a handful of these states usually covers thousands of subscriptions, so the business gets a short list to go through, not an endless one.
 
 > When the system is in doubt, it should stop and ask, not quietly fall back to some default behavior. A blocked activation is annoying for a day. A silent default can be wrong for years.
+
 {: .prompt-warning }
 
 Or, as I've started to put it:
 
 > A rule that has nothing to say about the past shouldn't be allowed to change the future.
+
 {: .prompt-tip }
+
+This is where the "multiple clocks" problem leads to a broader question. Once each rule has its own binding and evolution policy, you are no longer asking only *"what is valid now?"* You also need to answer *"what was this customer bound to, and why?"*
+
+That question opens the door to a larger set of problems: temporal modeling, policy versioning, grandfathering, and historical reconstruction.
+
+For this article, the model stops here. The important part is the shift in perspective: **time is not a single input to the billing engine. Each business rule owns the meaning of time that applies to it.**
 
 ![That's all folks!](/assets/img/posts/20260911/thats-all-folks.gif){: width="220" height="146" }
