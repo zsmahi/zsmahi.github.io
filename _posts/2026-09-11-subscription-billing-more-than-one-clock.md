@@ -102,6 +102,8 @@ And the combinations add up fast. Three price versions, two discount versions, t
 - Which ones are allowed?
 - Which ones were never tested?
 
+*(Section 3 comes back to exactly this question, once each axis has its own clock.)*
+
 I didn't get this right the first time. The first version I designed of an engine like this was built on a simple idea: at any given date, exactly one version of each rule is in force. On paper, it was clean and easy to explain, and I defended it for a while.
 
 It held until the first transition period. New terms were announced, but for several months the old terms and the new ones were both valid at the same time, and which one applied depended on the customer's situation, not on the date. My model had no way to say that. Then came a second problem: a promise that no existing customer would lose a benefit they already had because of the change. For some customers, that meant looking at the old rule and the new one, and keeping whichever was better for them. At that point, "which rule is in force today?" was clearly the wrong question. The right one was: which version is *this* customer bound to, and why?
@@ -144,6 +146,8 @@ So the state of a subscription can't be described by one date, not even one "eff
 |---|---|---|---|
 | Alice | v1 (€19) | v1 (10% after 12 months) | v1 (20%) |
 | Bob | v1 (€19) | v2 (15% after 24 months) | v1 (20%) |
+
+The tuple only answers one question: which versions is this customer bound to? Whether that particular combination is one the business would sign off on is a different question — section 3 is about that. For now, let's see how the tuple itself gets represented.
 
 ### Modeling it
 
@@ -230,6 +234,8 @@ public sealed class VersionResolver(IRuleCatalog<TaxRule> taxes)
 (In practice, the tuple is resolved per evaluation period rather than per invoice: a mid-cycle tier change can give one invoice two periods, each with its own tuple.)
 
 The engine never goes to "fetch the current price". It reads what's bound, or resolves with the axis's own policy, and each axis becomes a lookup: version N in, parameters out. Adding a new version is then mostly a new row in a table, not a new `if`. "Mostly", because a version that changes the *shape* of the calculation still needs code, but as a new strategy next to the old ones, without touching the customers bound to them.
+
+That's representation solved: each axis knows what it's bound to. It says nothing about whether a given combination across axes should exist at all.
 
 ---
 
