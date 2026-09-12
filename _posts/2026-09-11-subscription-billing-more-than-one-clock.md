@@ -282,9 +282,9 @@ var rule = new CompatibilityRule(
     Reason: "Launch offer was designed for the €39 price, not for grandfathered ones");
 ```
 
-This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence. Written as a `CompatibilityRule` (`Discount: Discounts.V2, Verdict: Forbidden` when cadence is monthly, with a `Reason` instead of a ticket number in a comment), it stops being a stray branch and becomes something the business can actually see and review.
+This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence, a fourth axis left out of the record above to keep the example small. Written as a `CompatibilityRule` — `Discount: Discounts.V2, Cadence: Monthly, Verdict: Forbidden` — with a `Reason` instead of a ticket number in a comment, it stops being a stray branch and becomes something the business can actually see and review.
 
-The three nullable fields keep the example readable. Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
+Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (cadence, usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
 
 It helps to draw it as a table: one column per price, one row per discount. Each cell is a combination, and the rules say which cells are allowed:
 
@@ -310,7 +310,7 @@ Seats                 5
 Price version         v1
 Discount version      v2   (bound at her March 2025 renewal)
 Tax version           v2
-Compatibility set     v7
+Catalogue version     v7
 ```
 
 Replaying it means using exactly those, never the current ones. A past result shouldn't depend on today's rules.
