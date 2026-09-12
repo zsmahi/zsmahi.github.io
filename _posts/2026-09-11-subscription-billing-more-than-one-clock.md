@@ -23,6 +23,9 @@ The first implementation is usually simple: store the subscription date, add an 
 
 That's the problem I want to look at: not one rule changing over time, but several, each at its own pace. I've run into it in more than one rule engine, and it took me a while to understand what was really going wrong.
 
+> The goal here isn't to build a full billing framework or handle system-wide migrations—that depends heavily on your stack. It's about shifting how we model time and state when business rules diverge.
+{: .prompt-info }
+
 > **TL;DR**
 > - Different business rules follow different clocks: the price is bound at subscription, the discount at business events, the tax at each invoice.
 > - The real state of a subscription is a tuple of versions, one per rule, not a date.
