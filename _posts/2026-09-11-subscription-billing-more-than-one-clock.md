@@ -5,7 +5,7 @@ author: zsmahi
 
 date: 2026-09-11 20:00:00 +0200
 
-description: Two customers, same plan, same start date, different invoice. Why business rules that change over time need one binding policy per rule, not one global effective date.
+description: Two customers, same plan, same start date, different invoice. Why business rules that change over time need their own binding policy, not one shared effective date — and why changing a rule isn't finished until someone decides what happens to the customers already bound to the old one.
 
 categories: [Blogging, System Design]
 
@@ -302,7 +302,7 @@ When should you check? For a long time I only checked when the tuple was created
 
 **At every billing run.** Some axes move on their own. The tax is resolved at evaluation, so it changes with no event on the subscription. Imagine tax v3 requires every discount to appear as its own invoice line, and discount v1 was built as a silent multiplier on the price. A customer still bound to discount v1 was fine last month. This month their tuple is (Price v1, Discount v1, Tax v3), and nobody touched their account. Adding a new compatibility rule has the same effect. If you only validate at state transitions, these cases go straight to the invoice.
 
-Because the rules are data, you can also audit them like a decision table, looking for *gaps* (possible tuples for which the catalogue has no answer) and *overlaps* (two rules disagreeing on the same tuple). I treat an overlap as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order. If two rules disagree, the system should stop, not pick one. Two rules matching the same tuple with the same verdict aren't that kind of problem — they're redundant, worth flagging during catalogue review, but not a reason to block anything. The error is specifically a conflict, not an overlap by itself.
+Because the rules are data, you can also audit them like a decision table, looking for *gaps* (possible tuples for which the catalogue has no answer) and *overlaps* (two or more rules matching the same tuple). An overlap where the rules disagree is a *conflict*, and I treat it as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order — if two rules disagree, the system should stop, not pick one. An overlap where the rules agree isn't that kind of problem — the rules are just redundant, worth flagging during catalogue review, but not a reason to block anything.
 
 ### Replaying the past
 
@@ -409,7 +409,7 @@ Or, as I've started to put it:
 
 One more thing worth admitting: this model has a domain where it stops working cleanly. Suppose the business decides something reasonable-sounding: existing subscriptions keep using `Tax v4`, but every new subscription must use `Tax v5`. That's not a Freeze or a Migrate decision made subscription by subscription — it's a blanket policy based on when the subscription was created. And `CompatibilityRule`, as defined here, only takes `(PriceVersion, DiscountVersion, TaxVersion)` as input. It has no way to express "this combination is valid, but only for subscriptions bound before a certain date" — it would need to know something about the binding itself, not just which versions are in play.
 
-That's a real limit, not a detail I'm glossing over. A `CompatibilityRule` that only sees version numbers works well when compatibility is purely about which versions get along with each other. It stops being enough the moment compatibility also depends on the history behind a binding — and at that point, the tuple itself would need to grow again.
+That's a real limit, not a detail I'm glossing over, and it goes deeper than the compatibility layer. A `CompatibilityRule` that only sees version numbers works well when compatibility is purely about which versions get along with each other. But tax, as modeled here, is resolved fresh at evaluation for every subscription alike — it was never bound to anything per-subscription to begin with. Making it depend on when a subscription started isn't only a bigger tuple; it's a different binding policy for that axis. The moment compatibility also depends on the history behind a binding, the tuple isn't the only thing that needs to grow.
 
 This is where the "multiple clocks" problem leads to a broader question. Once each rule has its own binding and evolution policy, you are no longer asking only *"what is valid now?"* You also need to answer *"what was this customer bound to, and why?"*
 
