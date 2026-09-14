@@ -284,6 +284,8 @@ var rule = new CompatibilityRule(
 
 `Matches` only answers whether a rule applies to a tuple. What it says about that tuple — `Allowed` or `Forbidden` — is the separate job of `Verdict`.
 
+There's a case the model doesn't spell out yet: what if no rule matches a tuple at all? Given the same discipline as everywhere else in this system, absence of a rule isn't the same thing as `Allowed` — a tuple nothing has judged is undecided, and undecided doesn't get to bill. The catalogue needs an explicit default for that gap, not a fallback baked into whichever code path happens to run first.
+
 This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence. Cadence is a fourth axis in the full model; I leave it out of the record above to keep the example small. Written the same way — a rule that forbids `Discounts.V2` for monthly plans, with a `Reason` instead of a ticket number in a comment — it stops being a stray branch and becomes something the business can actually see and review.
 
 Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (cadence, usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
@@ -300,7 +302,7 @@ When should you check? For a long time I only checked when the tuple was created
 
 **At every billing run.** Some axes move on their own. The tax is resolved at evaluation, so it changes with no event on the subscription. Imagine tax v3 requires every discount to appear as its own invoice line, and discount v1 was built as a silent multiplier on the price. A customer still bound to discount v1 was fine last month. This month their tuple is (Price v1, Discount v1, Tax v3), and nobody touched their account. Adding a new compatibility rule has the same effect. If you only validate at state transitions, these cases go straight to the invoice.
 
-Because the rules are data, you can also audit them like a decision table, looking for *gaps* (possible tuples for which the catalogue has no answer) and *overlaps* (two rules disagreeing on the same tuple). I treat an overlap as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order. If two rules disagree, the system should stop, not pick one.
+Because the rules are data, you can also audit them like a decision table, looking for *gaps* (possible tuples for which the catalogue has no answer) and *overlaps* (two rules disagreeing on the same tuple). I treat an overlap as a configuration error to fix before activation, never as something the engine settles at runtime with a priority order. If two rules disagree, the system should stop, not pick one. Two rules matching the same tuple with the same verdict aren't that kind of problem — they're redundant, worth flagging during catalogue review, but not a reason to block anything. The error is specifically a conflict, not an overlap by itself.
 
 ### Replaying the past
 
@@ -323,10 +325,11 @@ Replaying it means using exactly those, never the current ones. A past result sh
 
 A new compatibility rule makes some existing tuples invalid. In the table, it's a cell that gets a cross while customers are already in it. What happens to those subscriptions? I've seen teams avoid this question for a long time.
 
-Two common choices are:
+Three choices show up in practice:
 
 - **Migrate automatically** at the next renewal: move Alice to the current discount, or the current price, whatever makes her tuple valid again.
 - **Freeze** the affected bindings (her discount version, for example), and record them as an explicit exception.
+- **Block** billing for that subscription entirely, until someone resolves the case by hand.
 
 I've gone back and forth on this one. Where I've landed: the engine never decides, and for anything contractual, the default is to freeze.
 
@@ -338,7 +341,11 @@ For rules you don't control, like tax, freezing may not be a valid option: the b
 
 And for internal calculation details that don't change what the customer pays or sees, automatic migration is usually fine.
 
-So the rule isn't "always freeze". The rule is that the engine never decides whether existing customers get migrated. That decision belongs to the business policy of each axis, just like the binding policy. In the end, each axis has two policies:
+There's a third option, and it's the one nobody likes: **block** billing for that specific subscription until a person resolves it by hand. Freeze and migrate both assume the system can safely pick a side — keep the old combination, or move to a new one. Sometimes it can't. Say the old tax version wasn't just superseded, it was withdrawn because it was calculated wrong. Freezing keeps billing someone under a rate that shouldn't be applied anymore. Migrating changes what the customer agreed to, without anyone actually deciding that for them. Neither is safe enough to automate, so the invoice waits, and someone looks at the account before the next one goes out.
+
+This isn't the same thing as the `Blocked` activation result below. That one stops a *rule* from going live until every affected state has a decision — a system-wide gate. This is narrower: even after a decision exists, the decision itself can be "stop and ask" rather than "freeze" or "migrate" — a pause on one subscription, not on the rule.
+
+So the rule isn't "always freeze". The rule is that the engine never decides whether existing customers get migrated, frozen, or blocked. That decision belongs to the business policy governing the affected state, just like the binding policy belongs to each axis. In the end, each axis has two policies:
 
 ```text
 Axis
@@ -356,7 +363,7 @@ On the architecture side, this has a direct consequence. **Activating a new `Com
 ```csharp
 public sealed record EvolutionDecision(
     VersionTuple AffectedState,
-    DecisionKind Kind, // Freeze | Migrate
+    DecisionKind Kind, // Freeze | Migrate | Block
     string DecidedBy,
     DateOnly ReviewBy);
 
@@ -384,7 +391,9 @@ public sealed class CompatibilityRuleActivation(
 }
 ```
 
-The decision is made per affected state, not per subscription. In many systems, a handful of these states can cover thousands of subscriptions, so the business gets a short list to go through, not an endless one.
+`EvolutionDecision` keys the affected state by version tuple, which is deliberately the simplest thing that could work here — the closing section comes back to a case where that stops being enough.
+
+The decision can often be made per affected state, rather than per subscription. In many systems, a handful of these states can cover thousands of subscriptions, so the business gets a short list to go through, not an endless one.
 
 > When the system is in doubt, it should stop and ask, not quietly fall back to some default behavior. A blocked activation is annoying for a day. A silent default can be wrong for years.
 
@@ -395,6 +404,10 @@ Or, as I've started to put it:
 > A rule that has nothing to say about the past shouldn't be allowed to change the future.
 
 {: .prompt-tip }
+
+One more thing worth admitting: this model has a domain where it stops working cleanly. Suppose the business decides something reasonable-sounding: existing subscriptions keep using `Tax v4`, but every new subscription must use `Tax v5`. That's not a Freeze or a Migrate decision made subscription by subscription — it's a blanket policy based on when the subscription was created. And `CompatibilityRule`, as defined here, only takes `(PriceVersion, DiscountVersion, TaxVersion)` as input. It has no way to express "this combination is valid, but only for subscriptions bound before a certain date" — it would need to know something about the binding itself, not just which versions are in play.
+
+That's a real limit, not a detail I'm glossing over. A `CompatibilityRule` that only sees version numbers works well when compatibility is purely about which versions get along with each other. It stops being enough the moment compatibility also depends on the history behind a binding — and at that point, the tuple itself would need to grow again.
 
 This is where the "multiple clocks" problem leads to a broader question. Once each rule has its own binding and evolution policy, you are no longer asking only *"what is valid now?"* You also need to answer *"what was this customer bound to, and why?"*
 
