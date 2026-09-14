@@ -1,5 +1,5 @@
 ---
-title: "EP09- Why Your Subscription Billing Engine Needs More Than One Clock"
+title: "EP09 - Why Your Subscription Billing Engine Needs More Than One Clock"
 
 author: zsmahi
 
@@ -9,7 +9,7 @@ description: Two customers, same plan, same start date, different invoice. Why b
 
 categories: [Blogging, System Design]
 
-tags: [Domain Driven Design, system design, .net, c#, architecture, temporal-versioning, temporal-patterns]
+tags: [ddd, system design, .net, c#, architecture, temporal-versioning, temporal-patterns]
 
 pin: true
 
@@ -138,7 +138,7 @@ Same customer, three axes, three different clocks.
 
 ### Same seniority, different rules
 
-Now take Bob: same plan, same start date. In October 2024 he went from 5 to 10 seats, a trigger event, so his discount was bound again, this time to v2. Alice had no event until March 2025. In November 2024, they have the same plan, the same seniority, and different discount rules. Nothing is broken, but if nobody on the team expects it, it will come back as a support ticket.
+Now take Bob: same plan, also on annual billing, same start date. In October 2024 he went from 5 to 10 seats, a trigger event, so his discount was bound again, this time to v2. Alice had no event until March 2025. In November 2024, they have the same plan, the same seniority, and different discount rules. Nothing is broken, but if nobody on the team expects it, it will come back as a support ticket.
 
 So the state of a subscription can't be described by one date, not even one "effective date". It's a *tuple of versions*, one per axis:
 
@@ -390,6 +390,8 @@ public sealed class CompatibilityRuleActivation(
     }
 }
 ```
+
+Notice the check doesn't look at the rule's own verdict. A `Forbidden` rule obviously needs a decision for every tuple it now invalidates. A rule that instead makes a previously undecided tuple `Allowed` needs one too: those customers couldn't bill before, and letting them start now requires the same kind of explicit call — since when, and on whose authority — as freezing or migrating them would.
 
 `EvolutionDecision` keys the affected state by version tuple, which is deliberately the simplest thing that could work here — the closing section comes back to a case where that stops being enough.
 
