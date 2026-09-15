@@ -24,7 +24,7 @@ image:
 
 ## Introduction
 
-Alice runs a small design studio. In March 2022, she subscribed to the Pro plan of a project management SaaS for €19 per month. Since then, the public price went up to €29, then to €39. Alice still pays €19. That's *grandfathering*, and it's one of the most common pricing practices out there.
+Alice runs a small design studio. In March 2022, she subscribed to the Pro plan of a project management SaaS on annual billing, at the equivalent of €19 per month. Since then, the public price went up to €29, then to €39. Alice still pays €19. That's *grandfathering*, and it's one of the most common pricing practices out there.
 
 *(The problem comes from real work. The billing scenario, names, prices and dates are made up to illustrate it.)*
 
@@ -39,7 +39,7 @@ That's the problem I want to look at: not one rule changing over time, but sever
 > **TL;DR**
 >
 > - Different business rules follow different clocks: the price is bound at subscription, the discount at business events, the tax at each invoice.
-> - The state used to evaluate a subscription is a tuple of versions, one per rule, not a date.
+> - The rule-version context used to evaluate a subscription is a tuple, one version per axis — not the whole state, and not a date.
 > - Compatibility between rule versions should be data you can list and test, not scattered `if` statements.
 > - A new rule shouldn't go live until someone decides what happens to the existing customers it affects.
 
@@ -116,11 +116,15 @@ That's when I understood that the number of dates was never really the issue. Wh
 
 None of this is new territory. Martin Fowler's [temporal patterns](https://martinfowler.com/eaaDev/timeNarrative.html) (Effectivity, Temporal Property, Snapshot) answer "what was true at date X?" very well. What they leave open is *which* date each rule should use, and what happens when several rules, each on its own clock, have to live together. That's the part I want to focus on.
 
+> Independent binding clocks aren't the same thing as bitemporal modeling. This article is about *which* moment governs each rule. Bitemporality is a different, related question: the date something was true, versus the date the system found out about it — what you need when a change has to be recorded as if it had applied earlier, after the fact.
+
+{: .prompt-info }
+
 Let's call each independent rule (price, discount, tax) an *axis*. Each axis has a policy that says which moment decides its version. I've found that three patterns cover a lot of real cases.
 
 1. **Binding at subscription.** The version is chosen once, when the customer subscribes, and never moves. That's the base price: Alice's was decided in March 2022. (A plan change counts as a new agreement, with a new snapshot.)
 
-2. **Resolution at evaluation.** The version is looked up at each calculation, using the calculation date. That's the tax: nobody gets a grandfathered VAT rate. Strictly speaking, nothing is bound here, but "use the version in force at evaluation time" is still a decision.
+2. **Resolution at evaluation.** The version is looked up at each calculation, using the calculation date. That's how I'm treating tax here: nobody gets a grandfathered rate, the invoice date decides. Real-world tax rules often depend on more than a date — this example assumes that away on purpose, to keep the axis simple. Strictly speaking, nothing is bound here, but "use the version in force at evaluation time" is still a decision.
 
 3. **Binding at trigger event.** The version is chosen when a business event happens, and stays until the next one. That's the loyalty discount: it's picked again at each renewal or tier change.
 
@@ -163,7 +167,7 @@ One method for every rule looks clean, but it brings back the original mistake: 
 
 {: .prompt-info }
 
-First, the price. It's *not* an attribute of `Plan`, otherwise changing it would change it for everyone. It's an immutable value object captured at subscription and attached to the `Subscription` aggregate. (Close to Fowler's Snapshot, but not quite: his is a view of an object as at a given date, reading through to the underlying object; this one is a copy taken once, at binding time.)
+First, the price. A plan can still expose a catalogue price — what it costs today. But a subscription's contractual price can't be derived from that mutable, current value, or it would change for everyone retroactively. So it's captured as an immutable value object at subscription and attached to the `Subscription` aggregate. (Close to Fowler's Snapshot, but not quite: his is a view of an object as at a given date, reading through to the underlying object; this one is a copy taken once, at binding time.)
 
 ```csharp
 public sealed record PricingSnapshot(
@@ -211,6 +215,8 @@ public sealed class ChangeTierHandler(
 }
 ```
 
+`VersionInForceOn` answers *when*: whichever version the catalogue currently publishes for that date. It doesn't ask *which one this specific customer should get* — every trigger event resolves to the same standard version, for everyone, on that date. That's enough here, because the discount's own rule is "take whatever's current at each event." A policy that instead preserves a benefit a customer already earned, or picks a version by cohort or contract terms, needs a binding policy that also looks at the customer, not just the catalogue and the date — `VersionInForceOn` alone can't express that.
+
 The aggregate never sees the rule catalogue: the application layer resolves the version, the aggregate stores it. And the version is resolved once, at the event, then persisted. That's the real fix for the naive code: instead of rebuilding "which version did Alice get?" at every invoice, we answer it when it happens and write it down. Renewals work the same way.
 
 At billing time, resolving the tuple becomes boring, which is what we want:
@@ -231,7 +237,7 @@ public sealed class VersionResolver(IRuleCatalog<TaxRule> taxes)
 }
 ```
 
-(In practice, the tuple is resolved per evaluation period rather than per invoice: a mid-cycle tier change can give one invoice two periods, each with its own tuple.)
+(In practice, the tuple is resolved per evaluation period rather than per invoice: a mid-cycle tier change can give one invoice two periods, each with its own tuple.) That assumes the system can still say what a customer was bound to during a period that's already past. `DiscountVersion` as shown here is a single mutable property — it holds the current binding, not a history of them. Resolving a period before the last trigger event needs effective-dated binding history, which this example leaves out to keep `Subscription` readable.
 
 The engine never goes to "fetch the current price". It reads what's bound, or resolves with the axis's own policy, and each axis becomes a lookup: version N in, parameters out. Adding a new version is then mostly a new row in a table, not a new `if`. "Mostly", because a version that changes the *shape* of the calculation still needs code, but as a new strategy next to the old ones, without touching the customers bound to them.
 
@@ -288,6 +294,8 @@ There's a case the model doesn't spell out yet: what if no rule matches a tuple 
 
 This is also where the `IsAnnual` condition from Section 1 finally has a real home. It was never really about the discount version alone — it was a compatibility constraint between the discount axis and the plan's billing cadence. Cadence is a fourth axis in the full model; I leave it out of the record above to keep the example small. Written the same way — a rule that forbids `Discounts.V2` for monthly plans, with a `Reason` instead of a ticket number in a comment — it stops being a stray branch and becomes something the business can actually see and review.
 
+Worth being precise about what that move actually changes, not just where the condition lives. In the naive code, a monthly customer simply computed a zero discount — the invoice went out fine. As a `Forbidden` rule, the same situation stops the binding from happening at all, at the next renewal or tier change. That's not a cosmetic difference: it turns a silent no-op into a blocked transition, and the system now needs an answer for what a monthly customer gets instead of v2 — their own eligible version, or explicitly none — not just a rule saying v2 doesn't apply to them.
+
 Conceptually, a compatibility rule is a predicate on the tuple that returns a verdict, and the tuple grows with each new axis (cadence, usage quotas, contract terms...). The rules can now be listed, reviewed by the business, and tested without generating a single invoice. This is, in effect, a decision table: for a handful of axes a plain list validated by tests is enough, and it's only worth reaching for a dedicated rules engine once the number of axes and rules grows past what a team can review by eye.
 
 It helps to draw it as a table: one column per price, one row per discount. Each cell is a combination, and the rules say which cells are allowed:
@@ -306,7 +314,7 @@ Because the rules are data, you can also audit them like a decision table, looki
 
 ### Replaying the past
 
-The compatibility catalogue has versions too. Recalculate Alice's September 2026 invoice in 2030 with the 2030 catalogue, and you may get a different amount. That's not a recalculation anymore, it's a new invoice. An issued invoice never changes; replaying it is for checking it or preparing a credit note. So each invoice records its inputs and the versions it used:
+The compatibility catalogue has versions too. Recalculate Alice's September 2026 invoice in 2030 with the 2030 catalogue, and you may get a different amount. That's no longer a replay of the original evaluation — it's a recalculation under a different policy context, useful for a simulation or a correction, but not a substitute for what was actually billed. An issued invoice never changes; replaying it with its own recorded versions is for checking it or preparing a credit note. So each invoice records its inputs and the versions it used:
 
 ```text
 Invoice date          2026-09-01
@@ -336,6 +344,8 @@ I've gone back and forth on this one. Where I've landed: the engine never decide
 For contractual terms, like the price Alice agreed to or a commercial discount, freezing is the default. An automatic migration changes an agreement the customer already accepted, as a side effect of a rule written for other customers, without anyone deciding it for her. When Alice asks support why her invoice went up, the only honest answer is "a rule changed and your account got caught in it".
 
 **A freeze can be undone: the business can still migrate her later, on purpose, with notice. A wrong invoice is much harder to undo:** credit notes, support tickets, and a customer who trusts you a little less. Freezing has a cost too. Exceptions pile up, so each one needs an owner and a review date.
+
+Freezing a binding, by itself, doesn't make a forbidden tuple billable again — and the billing-time check from section 3 would otherwise catch it at the very next invoice. An exception has to do more than record that a decision was made: it has to carve that specific tuple out of the rule that forbids it, so the same compatibility check that runs on every invoice knows to let it through instead of blocking it. `EvolutionDecision` proves a choice happened. Making that choice actually enforceable at billing time is a detail this model doesn't spell out.
 
 For rules you don't control, like tax, freezing may not be a valid option: the business has to apply the current rate. The decision then moves to the other axes. In the tax v3 example, the question is what happens to the old discount.
 
@@ -392,6 +402,10 @@ public sealed class CompatibilityRuleActivation(
 ```
 
 Notice the check doesn't look at the rule's own verdict. A `Forbidden` rule obviously needs a decision for every tuple it now invalidates. A rule that instead makes a previously undecided tuple `Allowed` needs one too: those customers couldn't bill before, and letting them start now requires the same kind of explicit call — since when, and on whose authority — as freezing or migrating them would.
+
+It's worth admitting that case doesn't fit `DecisionKind` particularly well: authorizing billing isn't a Freeze, a Migrate, or a Block, it's closer to a fourth kind this model doesn't name. I've kept the example scoped to rules that forbid something, where the three choices are the right shape. A catalogue that also activates permissive rules this way would need to grow the enum, not just reuse it.
+
+There's a scope to this guarantee worth being explicit about too. `DistinctActiveTuples()` only sees tuples as they exist right now. Tax is resolved at evaluation, never bound to anything — so if a new tax version takes effect next month, no subscription shows that tuple yet, and today's activation can't find or gate on a state that doesn't exist until the rule it depends on changes. The activation gate catches what's true today; the billing-time check from section 3 is what catches the rest, a cycle later instead of before.
 
 `EvolutionDecision` keys the affected state by version tuple, which is deliberately the simplest thing that could work here — the closing section comes back to a case where that stops being enough.
 
